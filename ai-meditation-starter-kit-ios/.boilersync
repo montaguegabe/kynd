@@ -1,0 +1,10 @@
+{
+  "template": "https://github.com/openbase-community/templates.git#ios-tuist-app",
+  "name_snake": "ai_meditation",
+  "name_pretty": "AI Meditation",
+  "variables": {
+    "apple_team_id": "E6GA9X89TN",
+    "bundle_id": "com.gabemontague.aimeditation",
+    "description": "AI Meditation iOS app"
+  }
+}

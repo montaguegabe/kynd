@@ -1,0 +1,22 @@
+//
+//  Constants.swift
+//  AiMeditation
+//
+//  Configuration constants
+//
+
+import Foundation
+
+enum Constants {
+    // MARK: - API Configuration
+
+    /// Base URL for the API backend
+    static var apiBaseUrl: String {
+        "http://localhost:8000"  // Update with your API URL
+    }
+
+    /// AllAuth URL for authentication
+    static var allAuthUrl: String {
+        "\(apiBaseUrl)/_allauth/app/v1"
+    }
+}

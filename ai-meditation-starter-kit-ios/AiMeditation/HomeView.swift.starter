@@ -1,0 +1,117 @@
+//
+//  HomeView.swift
+//  AiMeditation
+//
+//  Main home view after authentication
+//
+
+import OpenbaseShared
+import SwiftUI
+import SwiftyJSON
+
+struct HomeView: View {
+    @EnvironmentObject var authContext: AuthContext
+    @EnvironmentObject var navigationManager: AuthNavigationManager
+
+    @State private var showLogoutSheet = false
+
+    var userName: String {
+        if let displayName = authContext.user?["display"].string, !displayName.isEmpty {
+            return displayName
+        }
+        if let username = authContext.user?["username"].string, !username.isEmpty {
+            return username
+        }
+        if let email = authContext.user?["email"].string {
+            return email
+        }
+        return "User"
+    }
+
+    var body: some View {
+        List {
+            // User info section
+            Section {
+                HStack(spacing: 16) {
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.blue)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(userName)
+                            .font(.headline)
+
+                        if let email = authContext.user?["email"].string {
+                            Text(email)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+
+            // Account settings
+            Section("Account") {
+                NavigationLink {
+                    ChangeEmailView()
+                } label: {
+                    Label("Email Addresses", systemImage: "envelope")
+                }
+
+                NavigationLink {
+                    ChangePasswordView()
+                } label: {
+                    Label("Change Password", systemImage: "lock")
+                }
+            }
+
+            // Security settings
+            Section("Security") {
+                if authContext.mfaEnabled {
+                    NavigationLink {
+                        MFAOverviewView()
+                    } label: {
+                        Label("Two-Factor Authentication", systemImage: "shield.checkered")
+                    }
+                }
+
+                NavigationLink {
+                    SessionsView()
+                } label: {
+                    Label("Active Sessions", systemImage: "desktopcomputer")
+                }
+
+                if !authContext.socialProviders.isEmpty {
+                    NavigationLink {
+                        ManageProvidersView()
+                    } label: {
+                        Label("Connected Accounts", systemImage: "person.2")
+                    }
+                }
+            }
+
+            // Sign out
+            Section {
+                Button(role: .destructive) {
+                    showLogoutSheet = true
+                } label: {
+                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                }
+            }
+        }
+        .navigationTitle("AI Meditation")
+        .sheet(isPresented: $showLogoutSheet) {
+            LogoutView()
+                .presentationDetents([.medium])
+        }
+    }
+}
+
+#Preview {
+    NavigationStack {
+        HomeView()
+            .environmentObject(AuthContext.shared)
+            .environmentObject(AuthNavigationManager(authContext: AuthContext.shared))
+    }
+}

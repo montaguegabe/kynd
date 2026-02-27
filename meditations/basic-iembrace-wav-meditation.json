@@ -6,6 +6,11 @@
   "timeline": [
     {
       "atMs": 0,
+      "kind": "effect",
+      "effectId": "calm-breath"
+    },
+    {
+      "atMs": 0,
       "kind": "wav",
       "file": "audio/basic-iembrace-wav-meditation-bell.wav"
     },
@@ -20,9 +25,19 @@
       "file": "audio/basic-iembrace-wav-meditation-inhale.wav"
     },
     {
+      "atMs": 14500,
+      "kind": "effect",
+      "effectId": "soft-pulse"
+    },
+    {
       "atMs": 22027,
       "kind": "wav",
       "file": "audio/basic-iembrace-wav-meditation-exhale.wav"
+    },
+    {
+      "atMs": 27000,
+      "kind": "effect",
+      "effectId": "starfield"
     },
     {
       "atMs": 32816,

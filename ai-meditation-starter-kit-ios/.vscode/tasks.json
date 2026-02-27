@@ -1,0 +1,69 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "iOS: Generate Project",
+            "type": "shell",
+            "command": "tuist generate",
+            "problemMatcher": [],
+            "presentation": {
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": true,
+                "clear": true
+            }
+        },
+        {
+            "label": "iOS: Install Dependencies",
+            "type": "shell",
+            "command": "tuist install",
+            "problemMatcher": [],
+            "presentation": {
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": true,
+                "clear": true
+            }
+        },
+        {
+            "label": "iOS: Build",
+            "type": "shell",
+            "command": "xcodebuild -workspace AiMeditation.xcworkspace -scheme AiMeditation -destination 'platform=iOS Simulator,name=iPhone 16' build",
+            "problemMatcher": [],
+            "presentation": {
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "iOS: Clean Build",
+            "type": "shell",
+            "command": "rm -rf DerivedData && xcodebuild -workspace AiMeditation.xcworkspace -scheme AiMeditation -destination 'platform=iOS Simulator,name=iPhone 16' build",
+            "problemMatcher": [],
+            "presentation": {
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": true,
+                "clear": true
+            }
+        },
+        {
+            "label": "iOS: Open Xcode",
+            "type": "shell",
+            "command": "open AiMeditation.xcworkspace",
+            "problemMatcher": [],
+            "presentation": {
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false
+            }
+        }
+    ]
+}

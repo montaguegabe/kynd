@@ -1,0 +1,9 @@
+---
+description: Repository structure documentation
+globs: 
+alwaysApply: false
+---
+This workspace contains multiple repositories:
+
+- `ios-shared`: Shared iOS package used by the iOS app
+- `ai-meditation-starter-kit-ios`: iOS app scaffolded from the BoilerSync iOS Tuist template

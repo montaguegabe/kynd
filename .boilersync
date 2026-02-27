@@ -15,6 +15,7 @@
   },
   "children": [
     "ai-meditation-starter-kit-api",
-    "ai-meditation-starter-kit-react"
+    "ai-meditation-starter-kit-react",
+    "ai-meditation-starter-kit-ios"
   ]
 }

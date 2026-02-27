@@ -11,6 +11,14 @@
     },
     {
       "url": "https://github.com/openbase-community/react-shared"
+    },
+    {
+      "url": "https://github.com/openbase-community/ios-shared",
+      "description": "Shared iOS package used by the iOS app"
+    },
+    {
+      "name": "ai-meditation-starter-kit-ios",
+      "description": "iOS app scaffolded from the BoilerSync iOS Tuist template"
     }
   ],
   "monoRepo": true

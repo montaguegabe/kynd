@@ -3,32 +3,30 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { isVisualEffectId } from "@/features/timeline-visuals/effectIds";
+import {
+  extractPlaybackEvents,
+  PlaybackEvent,
+} from "@/features/timeline-visuals/timelineEvents";
+import { PixiTimelineVisuals } from "@/features/timeline-visuals/pixiTimelineVisuals";
 import { useToast } from "@/hooks/use-toast";
 import { fetchMeditations, MeditationRecord } from "@/services/meditations";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-interface PlaybackEvent {
-  atMs: number;
-  kind: string;
-  file?: string;
-  effectId?: string;
+function getEventKindLabel(event: PlaybackEvent): string {
+  return event.kind === "unknown" ? event.rawKind : event.kind;
 }
 
-function extractPlaybackEvents(timeline: unknown): PlaybackEvent[] {
-  if (!Array.isArray(timeline)) {
-    return [];
+function getEventTargetLabel(event: PlaybackEvent): string {
+  if (event.kind === "wav" || event.kind === "ahap") {
+    return event.file ?? "trigger";
   }
 
-  return timeline
-    .filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === "object")
-    .map((entry) => {
-      const atMs = typeof entry.atMs === "number" ? Math.max(0, entry.atMs) : 0;
-      const kind = typeof entry.kind === "string" ? entry.kind : "unknown";
-      const file = typeof entry.file === "string" ? entry.file : undefined;
-      const effectId = typeof entry.effectId === "string" ? entry.effectId : undefined;
-      return { atMs, kind, file, effectId };
-    })
-    .sort((first, second) => first.atMs - second.atMs);
+  if (event.kind === "effect") {
+    return event.effectId;
+  }
+
+  return event.file ?? event.effectId ?? "trigger";
 }
 
 const Dashboard = () => {
@@ -43,6 +41,8 @@ const Dashboard = () => {
   const playbackTimeoutsRef = useRef<number[]>([]);
   const playbackTickerRef = useRef<number | null>(null);
   const activeAudioRef = useRef<HTMLAudioElement[]>([]);
+  const visualsContainerRef = useRef<HTMLDivElement | null>(null);
+  const visualsRef = useRef<PixiTimelineVisuals | null>(null);
 
   const selectedMeditation = useMemo(
     () => meditations.find((item) => item.id === selectedMeditationId) ?? null,
@@ -70,6 +70,8 @@ const Dashboard = () => {
       audio.currentTime = 0;
     }
     activeAudioRef.current = [];
+
+    void visualsRef.current?.reset();
   }, []);
 
   const stopPlayback = useCallback(
@@ -82,6 +84,22 @@ const Dashboard = () => {
     },
     [clearPlayback]
   );
+
+  useEffect(() => {
+    const hostElement = visualsContainerRef.current;
+
+    if (!hostElement) {
+      return;
+    }
+
+    const visuals = new PixiTimelineVisuals(hostElement);
+    visualsRef.current = visuals;
+
+    return () => {
+      visuals.destroy();
+      visualsRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -140,18 +158,44 @@ const Dashboard = () => {
 
     for (const event of timelineEvents) {
       const timeoutId = window.setTimeout(() => {
-        if (event.kind === "wav" && event.file) {
+        if (event.kind === "wav") {
           const audio = new Audio(event.file);
           activeAudioRef.current.push(audio);
           void audio.play();
         }
 
+        if (event.kind === "effect") {
+          if (!isVisualEffectId(event.effectId)) {
+            const unknownEffectMessage =
+              `No Pixi animation mapped for effect \"${event.effectId}\".`;
+
+            setRecentTriggers((existing) => [
+              `[${event.atMs}ms] effect error: ${event.effectId}`,
+              ...existing,
+            ].slice(0, 8));
+
+            toast({
+              title: "Unknown visual effect",
+              description: unknownEffectMessage,
+              variant: "destructive",
+            });
+
+            setCurrentMs(event.atMs);
+            stopPlayback();
+            return;
+          }
+
+          void visualsRef.current?.switchTo(event.effectId);
+        }
+
         const triggerDescription =
-          event.kind === "effect" && event.effectId
+          event.kind === "effect"
             ? `[${event.atMs}ms] effect: ${event.effectId}`
-            : event.kind === "wav" && event.file
+            : event.kind === "wav"
               ? `[${event.atMs}ms] wav: ${event.file}`
-              : `[${event.atMs}ms] ${event.kind}`;
+              : event.kind === "ahap"
+                ? `[${event.atMs}ms] ahap${event.file ? `: ${event.file}` : ""}`
+                : `[${event.atMs}ms] ${event.rawKind}`;
 
         setRecentTriggers((existing) => [triggerDescription, ...existing].slice(0, 8));
       }, event.atMs);
@@ -164,7 +208,7 @@ const Dashboard = () => {
       setCurrentMs(duration);
     }, duration);
     playbackTimeoutsRef.current.push(completionTimeout);
-  }, [selectedMeditation, stopPlayback]);
+  }, [selectedMeditation, stopPlayback, toast]);
 
   const progressValue = selectedMeditation
     ? Math.min(100, (Math.max(0, currentMs) / Math.max(1, selectedMeditation.durationMs)) * 100)
@@ -243,6 +287,15 @@ const Dashboard = () => {
               </div>
 
               <div className="rounded-md border p-3">
+                <p className="mb-2 text-sm font-medium">Visuals</p>
+                <div
+                  ref={visualsContainerRef}
+                  data-testid="visuals-canvas-host"
+                  className="h-56 w-full overflow-hidden rounded bg-slate-900/90"
+                />
+              </div>
+
+              <div className="rounded-md border p-3">
                 <p className="mb-2 text-sm font-medium">Timeline Events</p>
                 {selectedTimeline.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
@@ -256,10 +309,8 @@ const Dashboard = () => {
                         className="flex items-center justify-between rounded-sm bg-muted/50 px-2 py-1 text-xs"
                       >
                         <span>{event.atMs}ms</span>
-                        <span>{event.kind}</span>
-                        <span className="truncate">
-                          {event.file ?? event.effectId ?? "trigger"}
-                        </span>
+                        <span>{getEventKindLabel(event)}</span>
+                        <span className="truncate">{getEventTargetLabel(event)}</span>
                       </div>
                     ))}
                   </div>

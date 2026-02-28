@@ -5,6 +5,7 @@ import SwiftyJSON
 enum MeditationAPIError: LocalizedError {
     case invalidURL
     case invalidResponse
+    case invalidPayload
     case missingJWTToken
     case httpError(statusCode: Int)
 
@@ -14,6 +15,8 @@ enum MeditationAPIError: LocalizedError {
             return "The meditations endpoint URL is invalid."
         case .invalidResponse:
             return "The server returned an invalid response."
+        case .invalidPayload:
+            return "The server response payload is invalid."
         case .missingJWTToken:
             return "No JWT token is available. Please log in again."
         case let .httpError(statusCode):
@@ -70,6 +73,27 @@ final class MeditationAPIClient {
         request.setValue("django-allauth-swift-app", forHTTPHeaderField: "User-Agent")
 
         return try await fetchAuthorizedData(request: request, mayRefreshJWT: true)
+    }
+
+    func createMeditation(description: String) async throws -> MeditationRecord {
+        guard let url = URL(string: Constants.meditationsUrl) else {
+            throw MeditationAPIError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("django-allauth-swift-app", forHTTPHeaderField: "User-Agent")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["description": description])
+
+        let data = try await fetchAuthorizedData(request: request, mayRefreshJWT: true)
+        let payload = try JSON(data: data)
+        guard let record = MeditationRecord(json: payload) else {
+            throw MeditationAPIError.invalidPayload
+        }
+
+        return record
     }
 
     private func fetchAuthorizedData(request: URLRequest, mayRefreshJWT: Bool) async throws -> Data {

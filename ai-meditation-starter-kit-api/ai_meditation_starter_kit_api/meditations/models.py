@@ -7,9 +7,23 @@ from django.db import models
 class Meditation(models.Model):
     """🧘 Persisted meditation timeline definition."""
 
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PROCESSING = "processing", "Processing"
+        READY = "ready", "Ready"
+        FAILED = "failed", "Failed"
+
     public_id = PublicIdField()
     meditation_id = models.SlugField(max_length=120, unique=True, db_index=True)
     title = models.CharField(max_length=255)
+    description = models.TextField(default="")
+    script = models.TextField(default="")
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    error_message = models.TextField(blank=True, default="")
     duration_ms = models.PositiveIntegerField()
     timeline = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)

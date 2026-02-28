@@ -5,6 +5,8 @@ description = ""
 authors = []
 dependencies = [
     "librosa",
+    "langchain",
+    "langchain-anthropic",
 ]
 
 [build-system]

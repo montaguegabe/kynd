@@ -4,6 +4,9 @@ import mimetypes
 import secrets
 from pathlib import PurePosixPath
 
+from allauth.headless.contrib.rest_framework.authentication import (
+    JWTTokenAuthentication,
+)
 from asgiref.sync import async_to_sync
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
@@ -99,9 +102,13 @@ def _rewrite_timeline_asset_urls(request, timeline: object) -> object:
     return updated_timeline
 
 
-def _rewrite_payload_asset_urls(request, payload: dict[str, object]) -> dict[str, object]:
+def _rewrite_payload_asset_urls(
+    request, payload: dict[str, object]
+) -> dict[str, object]:
     updated_payload = dict(payload)
-    updated_payload["timeline"] = _rewrite_timeline_asset_urls(request, payload.get("timeline"))
+    updated_payload["timeline"] = _rewrite_timeline_asset_urls(
+        request, payload.get("timeline")
+    )
     return updated_payload
 
 
@@ -141,7 +148,9 @@ def _resolve_model_haptic_asset(haptic_key: str):
 
     if normalized_key.startswith("haptics/"):
         unprefixed_key = normalized_key.removeprefix("haptics/")
-        haptic_asset = MeditationHaptic.objects.filter(haptic_key=unprefixed_key).first()
+        haptic_asset = MeditationHaptic.objects.filter(
+            haptic_key=unprefixed_key
+        ).first()
     if haptic_asset is not None:
         return haptic_asset
 
@@ -170,11 +179,14 @@ def _build_meditation_id(description: str) -> str:
 
 
 class MeditationViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTTokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
         serializer = MeditationModelSerializer(Meditation.objects.all(), many=True)
-        payload = [_rewrite_payload_asset_urls(request, dict(item)) for item in serializer.data]
+        payload = [
+            _rewrite_payload_asset_urls(request, dict(item)) for item in serializer.data
+        ]
         return Response(payload)
 
     def retrieve(self, request, pk=None):
@@ -213,18 +225,24 @@ class MeditationViewSet(viewsets.ViewSet):
 
 
 class MeditationAudioView(APIView):
+    authentication_classes = [JWTTokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, audio_path: str):
         audio_asset = _resolve_model_audio_asset(audio_path)
-        content_type = mimetypes.guess_type(audio_asset.file.name)[0] or "application/octet-stream"
+        content_type = (
+            mimetypes.guess_type(audio_asset.file.name)[0] or "application/octet-stream"
+        )
         return FileResponse(audio_asset.file.open("rb"), content_type=content_type)
 
 
 class MeditationHapticView(APIView):
+    authentication_classes = [JWTTokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, haptic_path: str):
         haptic_asset = _resolve_model_haptic_asset(haptic_path)
-        content_type = mimetypes.guess_type(haptic_asset.file.name)[0] or "application/json"
+        content_type = (
+            mimetypes.guess_type(haptic_asset.file.name)[0] or "application/json"
+        )
         return FileResponse(haptic_asset.file.open("rb"), content_type=content_type)

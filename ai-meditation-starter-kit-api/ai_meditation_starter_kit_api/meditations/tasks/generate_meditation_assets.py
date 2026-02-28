@@ -102,6 +102,7 @@ async def generate_meditation_assets(meditation_pk: int) -> None:
             Target a calming pace suitable for about 5 to 8 minutes of spoken audio.
             Include gentle pauses using bracket notation like [2s] where appropriate.
             Keep the tone warm, compassionate, and grounded.
+            Do not make up specific personal details that were not provided by the user.
 
             User description:
             {description}

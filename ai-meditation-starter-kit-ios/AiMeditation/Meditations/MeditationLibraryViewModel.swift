@@ -25,6 +25,8 @@ final class MeditationLibraryViewModel: ObservableObject {
     @Published var isLoadingMeditations = false
     @Published var isCreatingMeditation = false
     @Published var isPollingMeditationStatus = false
+    @Published var isAudioLoading = false
+    @Published var shouldPromptForNextMeditation = false
     @Published var selectedMeditationId: String?
     @Published var isPlaying = false
     @Published var currentMs = 0
@@ -99,7 +101,6 @@ final class MeditationLibraryViewModel: ObservableObject {
                 selectedMeditationId = fetchedMeditations.first?.id
             }
         } catch {
-            print("[MeditationLibraryVM] loadMeditations error: \(error)")
             errorMessage = "Failed to load meditations: \(error.localizedDescription)"
         }
 
@@ -124,6 +125,9 @@ final class MeditationLibraryViewModel: ObservableObject {
 
         isCreatingMeditation = true
         errorMessage = nil
+        shouldPromptForNextMeditation = false
+        meditations = []
+        selectedMeditationId = nil
 
         do {
             let meditation = try await apiClient.createMeditation(description: trimmedDescription)
@@ -149,6 +153,7 @@ final class MeditationLibraryViewModel: ObservableObject {
         stopPlayback(resetMs: true)
         recentTriggers = []
         errorMessage = nil
+        shouldPromptForNextMeditation = false
         isPlaying = true
 
         let events = PlaybackEvent.extract(from: selectedMeditation.timelineEntries)
@@ -182,6 +187,7 @@ final class MeditationLibraryViewModel: ObservableObject {
             }
             self.stopPlayback(resetMs: false)
             self.currentMs = duration
+            self.shouldPromptForNextMeditation = true
         }
 
         scheduledWorkItems.append(completionWorkItem)
@@ -207,9 +213,7 @@ final class MeditationLibraryViewModel: ObservableObject {
         for player in activeHapticPlayers {
             do {
                 try player.stop(atTime: CHHapticTimeImmediate)
-            } catch {
-                print("[MeditationLibraryVM] stop haptic player error: \(error)")
-            }
+            } catch {}
         }
         activeHapticPlayers.removeAll()
 
@@ -217,6 +221,8 @@ final class MeditationLibraryViewModel: ObservableObject {
         self.hapticEngine = nil
 
         isPlaying = false
+        isAudioLoading = false
+        shouldPromptForNextMeditation = false
         activeEffect = nil
 
         if resetMs {
@@ -262,6 +268,11 @@ final class MeditationLibraryViewModel: ObservableObject {
     }
 
     private func playAudio(file: String, atMs: Int) async {
+        isAudioLoading = true
+        defer {
+            isAudioLoading = false
+        }
+
         do {
             let audioData = try await apiClient.fetchAudioData(filePathOrUrl: file)
             let player = try AVAudioPlayer(data: audioData)
@@ -330,9 +341,7 @@ final class MeditationLibraryViewModel: ObservableObject {
                 }
                 do {
                     try self.hapticEngine?.start()
-                } catch {
-                    print("[MeditationLibraryVM] haptic engine restart error: \(error)")
-                }
+                } catch {}
             }
         }
 
@@ -365,10 +374,10 @@ final class MeditationLibraryViewModel: ObservableObject {
         while Date() < timeoutDate {
             do {
                 let fetchedMeditations = try await apiClient.fetchMeditations()
-                meditations = fetchedMeditations
                 selectedMeditationId = meditationId
 
                 if let meditation = fetchedMeditations.first(where: { $0.id == meditationId }) {
+                    meditations = [meditation]
                     if meditation.status == .ready {
                         return
                     }
@@ -376,15 +385,29 @@ final class MeditationLibraryViewModel: ObservableObject {
                         errorMessage = "Meditation generation failed. Please try again."
                         return
                     }
+                } else {
+                    meditations = []
                 }
             } catch {
                 errorMessage = "Failed to refresh meditation status: \(error.localizedDescription)"
                 return
             }
 
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
         }
 
         errorMessage = "Meditation generation is taking longer than expected."
+    }
+
+    func prepareForNewMeditation() {
+        stopPlayback(resetMs: true)
+        meditations = []
+        selectedMeditationId = nil
+        errorMessage = nil
+        recentTriggers = []
+        activeEffect = nil
+        currentMs = 0
+        isAudioLoading = false
+        shouldPromptForNextMeditation = false
     }
 }

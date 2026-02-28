@@ -19,16 +19,18 @@ let project = Project(
             name: "AiMeditation",
             destinations: [.iPhone, .iPad],
             product: .app,
-            bundleId: "com.gabemontague.aimeditation",
+            bundleId: "com.gabemontague.kynd",
             deploymentTargets: .iOS("18.0"),
             infoPlist: .extendingDefault(with: [
-                "UILaunchScreen": .dictionary([:]),
-                "NSAppTransportSecurity": .dictionary([
-                    "NSAllowsArbitraryLoads": .boolean(true),
+                "CFBundleDisplayName": .string("Kynd"),
+                "CFBundleShortVersionString": .string("1.0.1"),
+                "CFBundleVersion": .string("1"),
+                "UILaunchScreen": .dictionary([
+                    "UIColorName": .string(""),
                 ]),
             ]),
             sources: ["AiMeditation/**"],
-            resources: ["AiMeditation/Assets.xcassets", "AiMeditation/Preview Content/**"],
+            resources: ["AiMeditation/Assets.xcassets", "AiMeditation/Preview Content/**", "AiMeditation/PrivacyInfo.xcprivacy"],
             dependencies: [
                 .external(name: "OpenbaseShared"),
             ],
@@ -43,7 +45,7 @@ let project = Project(
             name: "AiMeditationTests",
             destinations: [.iPhone, .iPad],
             product: .unitTests,
-            bundleId: "com.gabemontague.aimeditation.tests",
+            bundleId: "com.gabemontague.kynd.tests",
             deploymentTargets: .iOS("18.0"),
             sources: ["AiMeditationTests/**"],
             dependencies: [
@@ -54,7 +56,7 @@ let project = Project(
             name: "AiMeditationUITests",
             destinations: [.iPhone, .iPad],
             product: .uiTests,
-            bundleId: "com.gabemontague.aimeditation.uitests",
+            bundleId: "com.gabemontague.kynd.uitests",
             deploymentTargets: .iOS("18.0"),
             sources: ["AiMeditationUITests/**"],
             dependencies: [

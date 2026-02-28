@@ -53,6 +53,15 @@ struct MeditationRecord: Identifiable, Equatable {
         self.durationMs = max(0, durationMs)
         self.timelineEntries = json["timeline"].arrayValue
     }
+
+    var shortDisplayTitle: String {
+        let words = description.split(separator: " ", maxSplits: 3, omittingEmptySubsequences: true)
+        let preview = words.prefix(3).joined(separator: " ")
+        if preview.isEmpty {
+            return "Metta Meditation"
+        }
+        return "Metta Meditation — \(preview)..."
+    }
 }
 
 enum PlaybackEventKind: String, Equatable {

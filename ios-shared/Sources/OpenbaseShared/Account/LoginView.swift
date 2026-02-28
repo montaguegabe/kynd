@@ -43,28 +43,6 @@ public struct LoginView: View {
                     await login()
                 }
 
-                // Links
-                VStack(spacing: 12) {
-                    if authContext.loginByCodeEnabled {
-                        LinkButton(title: "Sign in with a code instead") {
-                            navigationManager.navigate(to: .confirmLoginCode)
-                        }
-                    }
-
-                    LinkButton(title: "Forgot password?") {
-                        navigationManager.navigate(to: .requestPasswordReset)
-                    }
-
-                    if authContext.signupAllowed {
-                        HStack {
-                            Text("Don't have an account?")
-                                .foregroundColor(.secondary)
-                            LinkButton(title: "Sign up") {
-                                navigationManager.navigate(to: .signup)
-                            }
-                        }
-                    }
-                }
             }
         }
         .navigationTitle("Sign In")

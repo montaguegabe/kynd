@@ -12,7 +12,7 @@ enum Constants {
 
     /// Base URL for the API backend.
     static var apiBaseUrl: String {
-        "http://100.81.0.19"
+        "https://app.kynd.world"
     }
 
     /// AllAuth URL for authentication.

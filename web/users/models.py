@@ -96,13 +96,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         if account is None:
             account = await Account.objects.acreate(user_owner=self)
         if not account.customer_id:
-            customer = await stripe.Customer.create_async(
-                email=self.email,
-                metadata={"user_id": self.id},
-            )
-            customer_id = customer.id
-            account.customer_id = customer_id
-            await account.asave()
+            with contextlib.suppress(stripe.error.AuthenticationError):
+                customer = await stripe.Customer.create_async(
+                    email=self.email,
+                    metadata={"user_id": self.id},
+                )
+                account.customer_id = customer.id
+                await account.asave()
         return account
 
     def save(self, *args, **kwargs):

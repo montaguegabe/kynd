@@ -10,14 +10,21 @@ class MeditationModelSerializer(BaseModelSerializer):
     id = serializers.SlugField(source="meditation_id")
     durationMs = serializers.IntegerField(source="duration_ms", min_value=0)  # noqa: N815
     timeline = serializers.JSONField()
+    script = serializers.CharField(allow_blank=True)
+    description = serializers.CharField(allow_blank=True)
 
     class Meta:
         model = Meditation
-        fields = ["id", "title", "durationMs", "timeline"]
+        fields = [
+            "id",
+            "title",
+            "durationMs",
+            "timeline",
+            "status",
+            "description",
+            "script",
+        ]
 
 
-class MeditationSerializer(serializers.Serializer):
-    id = serializers.SlugField()
-    title = serializers.CharField()
-    durationMs = serializers.IntegerField(min_value=0)  # noqa: N815
-    timeline = serializers.JSONField()
+class MeditationCreateSerializer(serializers.Serializer):
+    description = serializers.CharField(trim_whitespace=True, allow_blank=False)

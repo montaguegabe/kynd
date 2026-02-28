@@ -23,6 +23,8 @@ enum MeditationHapticsError: LocalizedError {
 final class MeditationLibraryViewModel: ObservableObject {
     @Published var meditations: [MeditationRecord] = []
     @Published var isLoadingMeditations = false
+    @Published var isCreatingMeditation = false
+    @Published var isPollingMeditationStatus = false
     @Published var selectedMeditationId: String?
     @Published var isPlaying = false
     @Published var currentMs = 0
@@ -110,8 +112,37 @@ final class MeditationLibraryViewModel: ObservableObject {
         selectedMeditationId = id
     }
 
+    func createMeditation(description: String) async {
+        let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedDescription.isEmpty else {
+            errorMessage = "Please enter a meditation description."
+            return
+        }
+        guard !isCreatingMeditation else {
+            return
+        }
+
+        isCreatingMeditation = true
+        errorMessage = nil
+
+        do {
+            let meditation = try await apiClient.createMeditation(description: trimmedDescription)
+            upsertMeditation(meditation)
+            selectedMeditationId = meditation.id
+            await pollForMeditationReadiness(meditationId: meditation.id)
+        } catch {
+            errorMessage = "Failed to create meditation: \(error.localizedDescription)"
+        }
+
+        isCreatingMeditation = false
+    }
+
     func playSelectedMeditation() {
         guard let selectedMeditation else {
+            return
+        }
+        guard selectedMeditation.status == .ready else {
+            errorMessage = "This meditation is still generating."
             return
         }
 
@@ -314,5 +345,46 @@ final class MeditationLibraryViewModel: ObservableObject {
         var next = recentTriggers
         next.insert(entry, at: 0)
         recentTriggers = Array(next.prefix(8))
+    }
+
+    private func upsertMeditation(_ meditation: MeditationRecord) {
+        if let index = meditations.firstIndex(where: { $0.id == meditation.id }) {
+            meditations[index] = meditation
+            return
+        }
+        meditations.insert(meditation, at: 0)
+    }
+
+    private func pollForMeditationReadiness(meditationId: String) async {
+        isPollingMeditationStatus = true
+        defer {
+            isPollingMeditationStatus = false
+        }
+
+        let timeoutDate = Date().addingTimeInterval(180)
+        while Date() < timeoutDate {
+            do {
+                let fetchedMeditations = try await apiClient.fetchMeditations()
+                meditations = fetchedMeditations
+                selectedMeditationId = meditationId
+
+                if let meditation = fetchedMeditations.first(where: { $0.id == meditationId }) {
+                    if meditation.status == .ready {
+                        return
+                    }
+                    if meditation.status == .failed {
+                        errorMessage = "Meditation generation failed. Please try again."
+                        return
+                    }
+                }
+            } catch {
+                errorMessage = "Failed to refresh meditation status: \(error.localizedDescription)"
+                return
+            }
+
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+        }
+
+        errorMessage = "Meditation generation is taking longer than expected."
     }
 }

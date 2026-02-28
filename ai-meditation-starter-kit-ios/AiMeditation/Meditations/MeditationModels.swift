@@ -2,39 +2,9 @@ import Foundation
 import SwiftUI
 import SwiftyJSON
 
-enum MeditationGenerationStatus: String, Equatable {
-    case pending
-    case processing
-    case ready
-    case failed
-    case unknown
-
-    init(rawValueOrUnknown value: String) {
-        self = MeditationGenerationStatus(rawValue: value) ?? .unknown
-    }
-
-    var displayName: String {
-        switch self {
-        case .pending:
-            return "Pending"
-        case .processing:
-            return "Processing"
-        case .ready:
-            return "Ready"
-        case .failed:
-            return "Failed"
-        case .unknown:
-            return "Unknown"
-        }
-    }
-}
-
 struct MeditationRecord: Identifiable, Equatable {
     let id: String
     let title: String
-    let description: String
-    let script: String
-    let status: MeditationGenerationStatus
     let durationMs: Int
     let timelineEntries: [JSON]
 
@@ -47,9 +17,6 @@ struct MeditationRecord: Identifiable, Equatable {
 
         self.id = id
         self.title = title
-        self.description = json["description"].stringValue
-        self.script = json["script"].stringValue
-        self.status = MeditationGenerationStatus(rawValueOrUnknown: json["status"].stringValue)
         self.durationMs = max(0, durationMs)
         self.timelineEntries = json["timeline"].arrayValue
     }

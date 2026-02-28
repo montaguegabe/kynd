@@ -12,7 +12,6 @@ import SwiftyJSON
 struct HomeView: View {
     @StateObject private var viewModel = MeditationLibraryViewModel()
     @State private var showLogoutSheet = false
-    @State private var meditationDescription = ""
 
     var body: some View {
         ScrollView {
@@ -33,7 +32,6 @@ struct HomeView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
 
-                meditationCreationSection
                 meditationListSection
                 playbackSection
             }
@@ -61,44 +59,6 @@ struct HomeView: View {
         }
     }
 
-    private var meditationCreationSection: some View {
-        GroupBox("Create Meditation") {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Describe the loving-kindness meditation you want to generate.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
-                TextEditor(text: $meditationDescription)
-                    .frame(minHeight: 90)
-                    .padding(6)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(Color.secondary.opacity(0.25), lineWidth: 1)
-                    )
-
-                Button {
-                    let description = meditationDescription
-                    Task {
-                        await viewModel.createMeditation(description: description)
-                    }
-                } label: {
-                    if viewModel.isCreatingMeditation || viewModel.isPollingMeditationStatus {
-                        Label("Generating...", systemImage: "hourglass")
-                    } else {
-                        Label("Generate Meditation", systemImage: "sparkles")
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(
-                    meditationDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                        viewModel.isCreatingMeditation ||
-                        viewModel.isPollingMeditationStatus
-                )
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
     private var meditationListSection: some View {
         GroupBox("Available Meditations") {
             VStack(alignment: .leading, spacing: 10) {
@@ -115,28 +75,16 @@ struct HomeView: View {
                             Button {
                                 viewModel.selectMeditation(id: meditation.id)
                             } label: {
-                                HStack {
-                                    Text(meditation.title)
-                                    Spacer(minLength: 8)
-                                    Text(meditation.status.displayName)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                Text(meditation.title)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .buttonStyle(.borderedProminent)
                         } else {
                             Button {
                                 viewModel.selectMeditation(id: meditation.id)
                             } label: {
-                                HStack {
-                                    Text(meditation.title)
-                                    Spacer(minLength: 8)
-                                    Text(meditation.status.displayName)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                Text(meditation.title)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .buttonStyle(.bordered)
                         }
@@ -154,14 +102,9 @@ struct HomeView: View {
                     Text(viewModel.selectedMeditation?.title ?? "Select a meditation")
                         .font(.headline)
                     Spacer(minLength: 8)
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(viewModel.selectedMeditation?.status.displayName ?? "No selection")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(viewModel.selectedMeditation.map { "\($0.durationMs) ms" } ?? "")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Text(viewModel.selectedMeditation.map { "\($0.durationMs) ms" } ?? "No selection")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 ProgressView(value: viewModel.progressValue)
@@ -174,11 +117,7 @@ struct HomeView: View {
                         viewModel.playSelectedMeditation()
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(
-                        viewModel.selectedMeditation == nil ||
-                            viewModel.selectedMeditation?.status != .ready ||
-                            viewModel.isPlaying
-                    )
+                    .disabled(viewModel.selectedMeditation == nil || viewModel.isPlaying)
 
                     Button("Stop") {
                         viewModel.stopPlayback(resetMs: true)
